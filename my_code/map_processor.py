@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 class MapProcessor():
     def __init__(self, n_x_lattice):
@@ -30,7 +31,7 @@ class Map(MapProcessor):
         bottom_length = np.linalg.norm([self.min_x - self.max_x, self.min_y - self.min_y])
         side_length = np.linalg.norm([self.min_x - self.min_x,  self.min_y - self.max_y])
         self.lattice_length = bottom_length / self.n_x_lattice
-        self.n_y_lattice = round(side_length / self.lattice_length)
+        self.n_y_lattice = math.ceil(side_length / self.lattice_length)
         self.n_state = int((self.n_x_lattice + 1) * (self.n_y_lattice + 1))
 
         self.all_states = list(range(self.n_state))
