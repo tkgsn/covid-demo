@@ -17,6 +17,8 @@ from population import initialize_population, initialize_destination_matrix,\
 set_destination_bounds, save_data, save_population, Population_trackers
 from visualiser import build_fig, draw_tstep, set_style, plot_sir
 
+from my_code.map_processor import Map
+
 #set seed for reproducibility
 #np.random.seed(100)
 
@@ -133,13 +135,16 @@ class Simulation():
         if self.Config.visualise:
             draw_tstep(self.Config, self.population, self.pop_tracker, self.frame, 
                        self.fig, self.spec, self.ax1, self.ax2)
+            
 
+        x, y = self.population[0,1], self.population[0,2]
+        state = self.map_processor.find_nearest_state([x, y])
         #report stuff to console
         sys.stdout.write('\r')
         sys.stdout.write('%i: healthy: %i, infected: %i, immune: %i, in treatment: %i, \
-dead: %i, of total: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop_tracker.infectious[-1],
+dead: %i, of total: %i, x, y: %f, %f, state: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop_tracker.infectious[-1],
                         self.pop_tracker.recovered[-1], len(self.population[self.population[:,10] == 1]),
-                        self.pop_tracker.fatalities[-1], self.Config.pop_size))
+                        self.pop_tracker.fatalities[-1], self.Config.pop_size, self.population[0,1], self.population[0,2], state))
 
         #save popdata if required
         if self.Config.save_pop and (self.frame % self.Config.save_pop_freq) == 0:
@@ -170,6 +175,10 @@ dead: %i, of total: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop
 
         i = 0
         
+        _xbounds = np.array([self.Config.xbounds[0] + 0.02, self.Config.xbounds[1] - 0.02])
+        _ybounds = np.array([self.Config.ybounds[0] + 0.02, self.Config.ybounds[1] - 0.02])
+        self.map_processor = Map(50, _xbounds[0], _xbounds[1], _ybounds[0], _ybounds[1])
+                            
         while i < self.Config.simulation_steps:
             try:
                 self.tstep()
