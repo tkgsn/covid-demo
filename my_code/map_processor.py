@@ -27,6 +27,9 @@ class Map(MapProcessor):
         n_split = self._cp_n_split(n_subgraph_x_nodes)
         self._make_graph(n_split)
         
+    def state_to_location(self, state):
+        coord = self.state_to_coord(state)
+        return [self.min_x + (self.max_x-self.min_x)*coord[0]/self.n_x_lattice, self.min_y + (self.max_y-self.min_y)*coord[1]/self.n_y_lattice]
     
     def find_nearest_states(self, coords):
         return [self._find_nearest_state(coord) for coord in coords]

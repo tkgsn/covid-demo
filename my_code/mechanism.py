@@ -6,20 +6,102 @@ import copy
 import joblib
 import os
 
+multiplier = 100
+hull_coords = np.array([[i,j] for i in range(-multiplier,multiplier) for j in range(-multiplier,multiplier)])
+
+def sample_point_from_body(vertices, n_sample=1):
+
+    if len(vertices) == 1:
+        return [vertices[0]]
+
+    x, y = vertices[:,0], vertices[:,1]
+
+    left = np.min(x)
+    right = np.max(x)
+    lower = np.min(y)
+    upper = np.max(y)
+
+    coef = multiplier / np.max([[right-left], [upper-lower]])
+
+    try:
+        hull = scipy.spatial.Delaunay(coef * vertices)
+        coords = hull_coords[hull.find_simplex(hull_coords)>=0] / coef
+        random_inds = np.random.randint(len(coords), size=n_sample)
+
+        return coords[random_inds]
+    except:
+        return sample_point_from_boundary(vertices, n_sample=n_sample)
+    
+def sample_point_from_boundary(vertices, n_sample = 1, total_length=None, segments=None):
+    if total_length is None:
+        total_length, segments = compute_total_length_of_full(vertices)
+
+    samples = np.zeros((n_sample, 2))
+
+    for i in range(n_sample):
+
+        random_length = np.random.rand() * total_length
+        temp_total_length = random_length
+        for seg_i, segment in enumerate(segments):
+            if temp_total_length - segment < 0:
+                break
+            temp_total_length = temp_total_length - segment
+
+        if seg_i == len(segments)-1:
+            seg_j = 0
+        else:
+            seg_j = seg_i+1
+
+        left_vertex = vertices[seg_i]
+        right_vertex = vertices[seg_j]
+
+        samples[i,:] = left_vertex + (right_vertex - left_vertex) * temp_total_length / segment
+
+    return samples
+
+
+def compute_total_length_of_full(vertices):
+
+    segments = []
+    total_length = 0
+    for i in range(len(vertices)):
+        if i == len(vertices)-1:
+            j = 0
+        else:
+            j = i+1
+        segment = np.linalg.norm(vertices[i] - vertices[j])
+        segments.append(segment)
+        total_length += segment
+
+    return total_length, segments
+    
+class Noise_generator():
+    
+    def __init__(self, epsilon, transformed_vertices, T_i):
+        self.transformed_vertices = transformed_vertices
+        self.T_i = T_i
+        self.epsilon = epsilon
+        
+    def generate(self):
+        sample = sample_point_from_body(self.transformed_vertices)[0]
+        noise = np.random.gamma(3, 1/self.epsilon, 1)
+
+        z = noise * np.dot(self.T_i, sample.T)
+
+        return z
+    
+    
 class Mechanism():
     def __init__(self, map_processor, epsilon):
         self.map_processor = map_processor
         self.epsilon = epsilon
     
-    def perturb(self, coord):
-        self.surrogated = self._surrogate(coord)
-        coord = self.surrogated
-        state = self.map_processor.coord_to_state(coord)
-        
-        chosen_noise_generator = self.noise_generators[self._state_counter(state)]
-        return coord + chosen_noise_generator()
+    def perturb(self, state):
+        coord = self.map_processor.state_to_coord(state)
+        chosen_noise_generator = self.noise_generators[self._connected_states_number(state)]
+        return coord + chosen_noise_generator.generate()
     
-    def _state_counter(self, state):
+    def _connected_states_number(self, state):
         for counter, states in enumerate(self.map_processor.set_of_connected_states):
             if state in states:
                 return counter
@@ -42,54 +124,27 @@ class Mechanism():
 
     def _check_included(self, cell_true_loc):
         return np.any(np.all(cell_true_loc == self.coords, axis=1))
-
-    def _surrogate(self, cell_true_loc):
-        
-        if not self._check_included(cell_true_loc):
-            
-            surrogated_loc, _ = self._find_nearest_loc(cell_true_loc)
-                    
-            return surrogated_loc
-        
-        else:
-            return cell_true_loc
-
-    def _find_nearest_loc(self, cell_loc):
-        
-        min_distance = float("inf")
-        
-        for i, coord in enumerate(self.coords):
-            distance = np.linalg.norm(cell_loc - coord)
-            
-            if distance < min_distance:
-                min_distance = distance
-                surrogated_loc = coord
-                state_no = self.states[i]
-        
-        return surrogated_loc, state_no
     
-    def _make_sensitivities(self, coords):
+    def _make_sensitivities(self, states):
         
         sensitivities = []
         
-        size = len(coords)
-        for i in range(size):
-            for j in range(i,size):
-                sensitivities += self._compute_sensitivity(coords, i, j)
+        for i, state1 in enumerate(states):
+            for state2 in states[i:]:
+                sensitivities += self._compute_sensitivity(state1, state2)
                 
         return np.array(sensitivities)
     
-    def _compute_sensitivity(self, coords, i, j):
-        return [(coords[i] - coords[j]), (coords[j] - coords[i])]
+    def _compute_sensitivity(self, state1, state2):
+        coord1 = self.map_processor.state_to_coord(state1)
+        coord2 = self.map_processor.state_to_coord(state2)
+        return [coord1 - coord2, coord2 - coord1]
     
     
 class PlanarIsotropicMechanism(Mechanism):
     
     def __init__(self, map_processor, epsilon, iso_trans_sample_size=5000):
         super().__init__(map_processor, epsilon)
-        
-        self.multiplier = 100
-        self.hull_coords = np.array([[i,j] for i in range(-self.multiplier,self.multiplier) for j in range(-self.multiplier,self.multiplier)])
         
         self.iso_trans_sample_size = iso_trans_sample_size
         
@@ -118,8 +173,8 @@ class PlanarIsotropicMechanism(Mechanism):
         return pos_dist
 
     
-    def _transform(self, vertices):
-        return np.dot(self.T, vertices.T).T
+    def _transform(self, vertices, T,):
+        return np.dot(T, vertices.T).T
     
     def _make_k_norm(self, vertices):
         
@@ -187,92 +242,31 @@ class PlanarIsotropicMechanism(Mechanism):
                 k = 1/a
 
         return k
-    
-    def compute_area_of_sensitivity_hull(self):
-        area = 0
-
-        sensitivities = self._make_sensitivities(self.coords)
-        vertices = self._make_convex_hull(sensitivities)
-        
-        n_vertices = len(vertices)
-
-        if n_vertices == 1:
-            return 0
-        elif n_vertices == 2:
-            return np.linalg.norm(vertices[0] - vertices[1])
-        else:
-            for i in range(n_vertices):
-                j = 0 if i == n_vertices-1 else i+1
-
-                coord0 = vertices[i]
-                coord1 = vertices[j]
-
-                area += (1/2)*np.abs(np.linalg.det(np.array([coord0,coord1])))
-
-            return area
 
     def build_distribution(self, true_state):
-        self.states = self.map_processor.connected_states(true_state)
-        self.coords = self.map_processor.states_to_coords(self.states)
+        states = self.map_processor.connected_states(true_state)
+        coords = self.map_processor.states_to_coords(states)
+        self.coords = coords
         
-        sensitivities = self._make_sensitivities(self.coords)
+        sensitivities = self._make_sensitivities(states)
         vertices = self._make_convex_hull(sensitivities)
-        self.T, self.T_i = self._compute_isotropic_transformation(vertices)
+        T, T_i = self._compute_isotropic_transformation(vertices)
 
-        transformed_vertices = self._transform(vertices)
-        self.k_norm = self._make_k_norm(transformed_vertices)
+        transformed_vertices = self._transform(vertices, T)
         
-        self.transformed_coords = self._transform(self.coords)
+        k_norm_generator = Noise_generator(self.epsilon, transformed_vertices, T_i)
         
-        ### For debug
-        
-        self.sensitivities = sensitivities
-        self.transformed_vertices = transformed_vertices
-        self.vertices = vertices
-        
-        
-        def k_norm_generator():
-            
-            sample = self._sample_point_from_body(self.transformed_vertices)[0]
-            noise = np.random.gamma(3, 1/self.epsilon, 1)
+        return k_norm_generator
 
-            z = noise * np.dot(self.T_i, sample.T)
-
-            return z
-        
-        self.noise_generator = k_norm_generator
-        
     def build_distributions(self):
         self.noise_generators = []
         for states in self.map_processor.set_of_connected_states:
-            self.states = states
-            coords = self.map_processor.states_to_coords(states)
-            self.coords = coords
-            
-            sensitivities = self._make_sensitivities(coords)
-            vertices = self._make_convex_hull(sensitivities)
-            self.T, self.T_i = self._compute_isotropic_transformation(vertices)
-
-            transformed_vertices = self._transform(vertices)
-            self.k_norm = self._make_k_norm(transformed_vertices)
-
-            self.transformed_coords = self._transform(self.coords)
-            
-            def k_norm_generator():
-
-                sample = self._sample_point_from_body(copy.deepcopy(transformed_vertices))[0]
-                noise = np.random.gamma(3, 1/self.epsilon, 1)
-
-                z = noise * np.dot(self.T_i, sample.T)
-
-                return z
-
-            self.noise_generators.append(k_norm_generator)
+            self.noise_generators.append(self.build_distribution(states[0]))
         
     
-    def _sample_point_from_boundary(self, vertices, n_sample = 1, total_length=None, segments=None):
+    def sample_point_from_boundary(self, vertices, n_sample = 1, total_length=None, segments=None):
         if total_length is None:
-            total_length, segments = self._compute_total_length_of_full(vertices)
+            total_length, segments = self.compute_total_length_of_full(vertices)
             
         samples = np.zeros((n_sample, 2))
             
@@ -305,7 +299,7 @@ class PlanarIsotropicMechanism(Mechanism):
             if np.all(vertices == 0) or len(vertices) == 2:
                 raise
                 
-            samples = self._sample_point_from_body(vertices, n_sample=self.iso_trans_sample_size)
+            samples = sample_point_from_body(vertices, n_sample=self.iso_trans_sample_size)
 
             T = np.average([np.dot(sample.reshape(2,-1), sample.reshape(2,-1).T) for sample in samples], axis=0)
             T = np.linalg.inv(T)
@@ -317,22 +311,6 @@ class PlanarIsotropicMechanism(Mechanism):
             T_i = np.array([[1,0],[0,1]])
             
         return T, T_i
-        
-        
-    def _compute_total_length_of_full(self, vertices):
-        
-        segments = []
-        total_length = 0
-        for i in range(len(vertices)):
-            if i == len(vertices)-1:
-                j = 0
-            else:
-                j = i+1
-            segment = np.linalg.norm(vertices[i] - vertices[j])
-            segments.append(segment)
-            total_length += segment
-            
-        return total_length, segments
         
 
     def _make_convex_hull(self, vertices):
@@ -381,39 +359,3 @@ class PlanarIsotropicMechanism(Mechanism):
             area += (1/2)*np.abs(np.linalg.det(np.array([coord0,coord1])))
         
         return area
-            
-            
-    def n_is_in(self, coord):
-        diffs = self.coords - coord
-        transformed_diffs = self._transform(diffs)
-        k_norm_of_diffs = np.array([self._k_norm(diff) for diff in transformed_diffs])
-        is_in = k_norm_of_diffs <= 1 + 1e-4
-        n_is_in = np.sum(is_in)
-        
-        return n_is_in
-            
-
-    def _sample_point_from_body(self, vertices, n_sample=1):
-        
-        if len(self.coords) == 1:
-            return [self.coords[0]]
-
-        x, y = vertices[:,0], vertices[:,1]
-        
-        left = np.min(x)
-        right = np.max(x)
-        lower = np.min(y)
-        upper = np.max(y)
-
-        coef = self.multiplier / np.max([[right-left], [upper-lower]])
-
-        try:
-            hull = scipy.spatial.Delaunay(coef * vertices)
-            
-            coords = self.hull_coords[hull.find_simplex(self.hull_coords)>=0] / coef
-
-            random_inds = np.random.randint(len(coords), size=n_sample)
-
-            return coords[random_inds]
-        except:
-            return self._sample_point_from_boundary(vertices, n_sample=n_sample)
