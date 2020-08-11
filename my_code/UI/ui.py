@@ -6,8 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from kivy.properties import StringProperty, NumericProperty, BooleanProperty, ObjectProperty
 import sys
-sys.path.append("../../")
+import os
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 from simulation import Simulation
 
 class RootWidget(BoxLayout):
@@ -36,23 +37,7 @@ class RootWidget(BoxLayout):
         print("run")
         sim.run()
         
-""" 
-class GraphView(BoxLayout):
-    fig, ax = plt.subplots()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.counter = 0
-
-        widget = FigureCanvasKivyAgg(GraphView.fig)
-        self.add_widget(widget)
-
-        Clock.schedule_interval(self.update_view, 0.01)
-
-    def update_view(self, *args, **kwargs):
-        GraphView.fig.canvas.draw()
-        GraphView.fig.canvas.flush_events()
-"""
-        
+       
 class UiApp(App):
     def build(self):
         return RootWidget()
