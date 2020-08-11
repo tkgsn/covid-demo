@@ -1,0 +1,111 @@
+<RootWidget>:
+    orientation: 'vertical'
+    
+    inputEpsilon: epsilonContent
+    inputNPeople: n_peopleContent
+    inputNGrid: n_gridContent
+
+    BoxLayout:
+        size_hint_y: None
+        height: 50.0
+        
+        Label:
+            text: 'ε'
+            size_hint_x: 0.1
+
+        Slider:
+            id: epsilonSlider
+            size_hint_x: 0.75
+            min: 0.1
+            max: 10.0
+            value: 2.0
+
+        TextInput:
+            id: epsilonContent
+            size_hint_x: 0.25
+            text: '{:.1f}'.format(epsilonSlider.value)
+            multiline: False
+            
+    BoxLayout:
+        size_hint_y: None
+        height: 50.0
+        
+        Label:
+            text: 'n people'
+            size_hint_x: 0.1
+
+        Slider:
+            id: n_peopleSlider
+            size_hint_x: 0.75
+            min: 1
+            max: 500
+            value: 200
+
+        TextInput:
+            id: n_peopleContent
+            size_hint_x: 0.25
+            text: '{:.0f}'.format(n_peopleSlider.value)
+            multiline: False
+            
+    BoxLayout:
+        size_hint_y: None
+        height: 50.0
+        
+        Label:
+            text: 'n grid'
+            size_hint_x: 0.1
+
+        Slider:
+            id: n_gridSlider
+            size_hint_x: 0.75
+            min: 2
+            max: 50
+            value: 50
+
+        TextInput:
+            id: n_gridContent
+            size_hint_x: 0.25
+            text: '{:.0f}'.format(n_gridSlider.value)
+            multiline: False
+            
+    BoxLayout:
+        size_hint_y: None
+        height: 100.0
+        orientation: 'horizontal'
+        Label:
+            text: "Policy Graph"
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "3*3"
+            CheckBox:
+                id: check_33
+                active: root.policy_graph_33
+                group: 'radio'
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "4*4"
+            CheckBox:
+                id: check_44
+                active: root.policy_graph_44
+                group: 'radio'
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "5*5"
+            CheckBox:
+                id: check_55
+                active: root.policy_graph_55
+                group: 'radio'
+
+
+    BoxLayout:
+        size_hint_y: None
+        height: 50.0
+        Button:
+            id: button1
+            text: "START"
+            font_size: 48
+            on_press: root.start_clicked()
+    BoxLayout:
