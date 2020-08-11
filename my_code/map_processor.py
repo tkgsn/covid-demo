@@ -61,7 +61,6 @@ class Map(MapProcessor):
         self.n_state = int((self.n_x_lattice + 1) * (self.n_y_lattice + 1))
 
         self.all_states = list(range(self.n_state))
-        self.all_coords = self.states_to_coords(self.all_states)
         
     def _make_graph(self, n_split):
         self.graph_mat = np.zeros((self.n_state, self.n_state))

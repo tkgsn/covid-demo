@@ -1,5 +1,6 @@
 import os
 import sys
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,8 +34,11 @@ class Simulation():
 
         #initialize default population
         self.population_init()
+        self.counts = []
+        self.perturbed_counts = []
 
         self.pop_tracker = Population_trackers()
+        self.range = 10
 
         #initalise destinations vector
         self.destinations = initialize_destination_matrix(self.Config.pop_size, 1)        
@@ -63,7 +67,8 @@ class Simulation():
         
         if self.frame == 0 and self.Config.visualise:
             #initialize figure
-            self.fig, self.spec, self.ax1, self.ax2 = build_fig(self.Config)
+            self.fig, self.spec, self.ax1, self.ax2, self.ax3, self.ax4 = build_fig(self.Config)
+            #self.fig, self.spec, self.ax1 = build_fig(self.Config)
 
         #check destinations if active
         #define motion vectors if destinations active and not everybody is at destination
@@ -115,15 +120,15 @@ class Simulation():
         self.population = update_positions(self.population)
 
         #find new infections
-        self.population, self.destinations = infect(self.population, self.Config, self.frame, 
-                                                    send_to_location = self.Config.self_isolate, 
-                                                    location_bounds = self.Config.isolation_bounds,  
-                                                    destinations = self.destinations, 
-                                                    location_no = 1, 
-                                                    location_odds = self.Config.self_isolate_proportion)
+        #self.population, self.destinations = infect(self.population, self.Config, self.frame, 
+        #                                            send_to_location = self.Config.self_isolate, 
+        #                                            location_bounds = self.Config.isolation_bounds,  
+        #                                            destinations = self.destinations, 
+        #                                            location_no = 1, 
+        #                                            location_odds = self.Config.self_isolate_proportion)
 
         #recover and die
-        self.population = recover_or_die(self.population, self.frame, self.Config)
+        #self.population = recover_or_die(self.population, self.frame, self.Config)
 
         #send cured back to population if self isolation active
         #perhaps put in recover or die class
@@ -132,26 +137,44 @@ class Simulation():
 
         #update population statistics
         self.pop_tracker.update_counts(self.population)
-
-        #visualise
-        if self.Config.visualise:
-            draw_tstep(self.Config, self.population, self.pop_tracker, self.frame, 
-                       self.fig, self.spec, self.ax1, self.ax2)
             
-
-        coords = np.array([self.population[:,1], self.population[:,2]]).reshape([-1,2])
+        coords = self.population[:, 1:3]
         states = self.map_processor.find_nearest_states(coords)
         count = surveil(states)
+        self.counts.append(count)
+        ac = np.average(self.counts[-self.range:])
         
-        perturbed_states = [self.pim.perturb(state) for state in states]
+        perturbed_states = [self.pim.perturb_to_subgraph(state) for state in states]
         count2 = surveil(perturbed_states)
+        self.perturbed_counts.append(count2)
+        pac = np.average(self.perturbed_counts[-self.range:])
+        
+        perturbed_population = copy.deepcopy(self.population)
+        locations = [self.pim.map_processor.state_to_location(state) for state in states]
+        perturbed_locations = [self.pim.map_processor.state_to_location(state) for state in perturbed_states]
+
+        for i, location in enumerate(perturbed_locations):
+            perturbed_population[i][1] = location[0]
+            perturbed_population[i][2] = location[1]
+        
+        if self.Config.visualise:
+            #draw_tstep(self.Config, perturbed_population, self.pop_tracker, self.frame, 
+            #           self.fig, self.spec, self.ax1, self.ax2)
+            draw_tstep(self.Config, self.population, perturbed_population, self.counts, self.perturbed_counts, self.frame, 
+                       self.fig, self.spec, self.ax1, self.ax2, self.ax3, self.ax4)
+            #draw_tstep(self.Config, perturbed_population, self.pop_tracker, self.frame, self.ax)
+        #visualise
+        #if self.Config.visualise:
+        #    draw_tstep(self.Config, self.population, self.pop_tracker, self.frame, 
+        #               self.fig, self.spec, self.ax1, self.ax2)
         
         #report stuff to console
         sys.stdout.write('\r')
-        sys.stdout.write('%i: healthy: %i, infected: %i, immune: %i, in treatment: %i, \
-dead: %i, of total: %i, count: %i, perturbed_count: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop_tracker.infectious[-1],
-                        self.pop_tracker.recovered[-1], len(self.population[self.population[:,10] == 1]),
-                        self.pop_tracker.fatalities[-1], self.Config.pop_size, count2, count))
+        sys.stdout.write("%i: CC, %i: PP-CC, %f: ACC, %f: PP-ACC" %(count, count2, ac, pac))
+        #sys.stdout.write('%i: healthy: %i, infected: %i, immune: %i, in treatment: %i, \
+#dead: %i, of total: %i, count: %i, perturbed_count: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop_tracker.infectious[-1],
+        #                self.pop_tracker.recovered[-1], len(self.population[self.population[:,10] == 1]),
+        #                self.pop_tracker.fatalities[-1], self.Config.pop_size, count, count2))
 
         #save popdata if required
         if self.Config.save_pop and (self.frame % self.Config.save_pop_freq) == 0:
@@ -179,14 +202,14 @@ dead: %i, of total: %i, count: %i, perturbed_count: %i' %(self.frame, self.pop_t
 
     def run(self):
         '''run simulation'''
-
+        
         i = 0
         
         _xbounds = np.array([self.Config.xbounds[0] + 0.02, self.Config.xbounds[1] - 0.02])
         _ybounds = np.array([self.Config.ybounds[0] + 0.02, self.Config.ybounds[1] - 0.02])
-        self.map_processor = Map(50, _xbounds[0], _xbounds[1], _ybounds[0], _ybounds[1], 2)
-        epsilon = 10
-        self.pim = PIM(self.map_processor, epsilon)
+        
+        self.map_processor = Map(self.Config.n_grid, _xbounds[0], _xbounds[1], _ybounds[0], _ybounds[1], int(self.Config.policy_graph))
+        self.pim = PIM(self.map_processor, self.Config.epsilon)
         self.pim.build_distributions()
                             
         while i < self.Config.simulation_steps:

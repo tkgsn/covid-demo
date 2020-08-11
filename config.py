@@ -12,7 +12,7 @@ class Configuration():
     def __init__(self, *args, **kwargs):
         #simulation variables
         self.verbose = kwargs.get('verbose', True) #whether to print infections, recoveries and fatalities to the terminal
-        self.simulation_steps = kwargs.get('simulation_steps', 10000) #total simulation steps performed
+        self.simulation_steps = kwargs.get('simulation_steps', 1000) #total simulation steps performed
         self.tstep = kwargs.get('tstep', 0) #current simulation timestep
         self.save_data = kwargs.get('save_data', False) #whether to dump data at end of simulation
         self.save_pop = kwargs.get('save_pop', False) #whether to save population matrix every 'save_pop_freq' timesteps
@@ -48,7 +48,7 @@ class Configuration():
         self.ybounds = kwargs.get('ybounds', [self.y_plot[0] + 0.02, self.y_plot[1] - 0.02])    
     
         #population variables
-        self.pop_size = kwargs.get('pop_size', 2000)
+        self.pop_size = kwargs.get('pop_size', 200)
         self.mean_age = kwargs.get('mean_age', 45)
         self.max_age = kwargs.get('max_age', 105)
         self.age_dependent_risk = kwargs.get('age_dependent_risk', True) #whether risk increases with age
@@ -90,6 +90,10 @@ class Configuration():
         #lockdown variables
         self.lockdown_percentage = kwargs.get('lockdown_percentage', 0.1) 
         self.lockdown_vector = kwargs.get('lockdown_vector', [])
+        
+        self.policy_graph = kwargs.get("policy_graph", 3)
+        self.epsilon = kwargs.get("epsilon", 2)
+        self.n_grid = kwargs.get("n_grid", 50)
         
         
     def get_palette(self):
