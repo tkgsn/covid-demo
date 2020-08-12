@@ -52,7 +52,7 @@ def build_fig(Config, figsize=(7,5)):
 #               fig, spec, ax1, ax2):
 #def draw_tstep(Config, perturbed_population, pop_tracker, frame,
 #               fig, spec, ax1, ax2):
-def draw_tstep(Config, population, perturbed_population, counts, perturbed_counts, frame,
+def draw_tstep(Config, population, perturbed_population, counts, perturbed_counts, e_distances, frame,
                fig, spec, ax1, ax2, ax3, ax4):
 #def draw_tstep(Config, population, pop_tracker, frame,
 #               fig, spec, ax1):
@@ -77,8 +77,8 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     view_range = 100
     ax3.set_xlim(frame-view_range, frame)
     ax3.set_ylim(-5, Config.pop_size + 5)
-    ax4.set_xlim(0, Config.simulation_steps)
-    ax4.set_ylim(0, Config.pop_size)
+    ax4.set_xlim(frame-view_range, frame)
+    ax4.set_ylim(0, 0.5)
 
     if Config.self_isolate and Config.isolation_bounds != None:
         build_hospital(Config.isolation_bounds[0], Config.isolation_bounds[2],
@@ -152,10 +152,16 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     #    raise ValueError('incorrect plot_style specified, use \'sir\' or \'default\'')
 
     #ax2.legend(loc = 'best', fontsize = 6)
-    ax3.plot(range(frame+1), counts, color=palette[1], label="counts")
-    ax3.plot(range(frame+1), perturbed_counts, color=palette[2], label="privacy-preserved counts")
+    ax3.plot(range(frame+1), counts, color=palette[0], label="counts")
+    ax3.plot(range(frame+1), perturbed_counts[0], color=palette[1], label="privacy-preserved counts 3*3")
+    ax3.plot(range(frame+1), perturbed_counts[1], color=palette[2], label="privacy-preserved counts 4*4")
+    ax3.plot(range(frame+1), perturbed_counts[2], color=palette[3], label="privacy-preserved counts 5*5")
     ax3.legend()
-    
+
+    ax4.plot(range(frame+1), e_distances[0], color=palette[1], label="3*3")
+    ax4.plot(range(frame+1), e_distances[1], color=palette[2], label="4*4")
+    ax4.plot(range(frame+1), e_distances[2], color=palette[3], label="5*5")
+    ax4.legend()
     
     plt.draw()
     plt.pause(0.0001)

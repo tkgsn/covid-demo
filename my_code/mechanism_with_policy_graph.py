@@ -5,11 +5,14 @@ def make_mechanism_with_policy_graph_class(mechanism_class):
     
     class MechanismWithPolicyGraph(mechanism_class):
         
-        def __init__(self, map_processor, epsilon):
+        def __init__(self, map_processor, epsilon, n_subgraph_x):
             super().__init__(map_processor, epsilon)
-            
+            n_split = map_processor.cp_n_split(n_subgraph_x)
+            self.graph_mat = map_processor.make_graph(n_split)
+            self.set_of_connected_states = map_processor.make_set_of_connected_states(self.graph_mat)
+
         def _compute_sensitivity(self, state1, state2):
-            if self.map_processor.graph_mat[state1,state2] == 1:
+            if self.graph_mat[state1,state2] == 1:
                 return super()._compute_sensitivity(state1, state2)
             else:
                 return []
@@ -45,7 +48,7 @@ def make_mechanism_with_policy_graph_class(mechanism_class):
                 
         def perturb_to_subgraph(self, state):
             perturbed_coord = super().perturb(state)
-            perturbed_state = self._find_nearest_state_in_states(perturbed_coord, self.map_processor.connected_states(state))
+            perturbed_state = self._find_nearest_state_in_states(perturbed_coord, self.connected_states(state))
             return perturbed_state
             
     return MechanismWithPolicyGraph

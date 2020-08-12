@@ -6,8 +6,8 @@ import map_processor
 class TestMap(unittest.TestCase):
 
     def setUp(self):
-        self.x_y_equal_map = map_processor.Map(50, 0, 1, 0, 1, 2)
-        self.x_2y_map = map_processor.Map(50, 0, 1, 0, 2, 2)
+        self.x_y_equal_map = map_processor.Map(50, 0, 1, 0, 1)
+        self.x_2y_map = map_processor.Map(50, 0, 1, 0, 2)
     
     def tearDown(self):
         pass
@@ -25,10 +25,6 @@ class TestMap(unittest.TestCase):
         self.assertEqual(upper_left, 51*50)
         self.assertEqual(middle_left, 51*25)
         self.assertEqual(middle_right, 51*26 -1)
-        
-    def test_connected_states(self):
-        test_state = 0
-        self.assertIn(test_state, self.x_y_equal_map.connected_states(test_state))
     
     def test_convert_state_and_coord(self):
         zero_coord = self.x_y_equal_map.state_to_coord(0)

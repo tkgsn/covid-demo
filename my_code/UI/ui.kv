@@ -67,37 +67,6 @@
             size_hint_x: 0.25
             text: '{:.0f}'.format(n_gridSlider.value)
             multiline: False
-            
-    BoxLayout:
-        size_hint_y: None
-        height: 100.0
-        orientation: 'horizontal'
-        Label:
-            text: "Policy Graph"
-        BoxLayout:
-            orientation: 'vertical'
-            Label:
-                text: "3*3"
-            CheckBox:
-                id: check_33
-                active: root.policy_graph_33
-                group: 'radio'
-        BoxLayout:
-            orientation: 'vertical'
-            Label:
-                text: "4*4"
-            CheckBox:
-                id: check_44
-                active: root.policy_graph_44
-                group: 'radio'
-        BoxLayout:
-            orientation: 'vertical'
-            Label:
-                text: "5*5"
-            CheckBox:
-                id: check_55
-                active: root.policy_graph_55
-                group: 'radio'
 
 
     BoxLayout:

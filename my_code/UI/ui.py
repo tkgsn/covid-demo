@@ -32,7 +32,6 @@ class RootWidget(BoxLayout):
         else:
             policy_graph_value = np.array([3,4,5])[tuple([policy_graph_booleans])][0]
             
-        print(float(self.inputEpsilon.text))
         sim = Simulation(pop_size=int(self.inputNPeople.text), policy_graph=policy_graph_value, epsilon=float(self.inputEpsilon.text), n_grid=int(self.inputNGrid.text))
         print("run")
         sim.run()

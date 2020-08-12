@@ -21,11 +21,9 @@ class MapProcessor():
             
 class Map(MapProcessor):
         
-    def __init__(self, n_x_lattice, min_x, max_x, min_y, max_y, n_subgraph_x_nodes):
+    def __init__(self, n_x_lattice, min_x, max_x, min_y, max_y):
         super().__init__(n_x_lattice)
         self._make_map(min_x, max_x, min_y, max_y)
-        n_split = self._cp_n_split(n_subgraph_x_nodes)
-        self._make_graph(n_split)
         
     def state_to_location(self, state):
         coord = self.state_to_coord(state)
@@ -33,22 +31,17 @@ class Map(MapProcessor):
     
     def find_nearest_states(self, coords):
         return [self._find_nearest_state(coord) for coord in coords]
-    
-    def connected_states(self, state):
-        for states in self.set_of_connected_states:
-            if state in states:
-                return states
             
-    def _make_set_of_connected_states(self):
+    def make_set_of_connected_states(self, graph_mat):
         G = nx.Graph()
         G.add_nodes_from(self.all_states)
 
         for i, state in enumerate(self.all_states):
             for state_ in self.all_states[i:]:
-                if self.graph_mat[state, state_] == 1:
+                if graph_mat[state, state_] == 1:
                     G.add_edge(state, state_)
 
-        self.set_of_connected_states = [list(nodes) for nodes in nx.connected_components(G)]
+        return [list(nodes) for nodes in nx.connected_components(G)]
     
     def _make_map(self, min_x, max_x, min_y, max_y):
         
@@ -62,15 +55,12 @@ class Map(MapProcessor):
 
         self.all_states = list(range(self.n_state))
         
-    def _make_graph(self, n_split):
-        self.graph_mat = np.zeros((self.n_state, self.n_state))
+    def make_graph(self, n_split):
         self._make_area(n_split)
-        
-        self._update_graph_according_to_area(self.all_states)
-        self._make_set_of_connected_states()
+        return self._update_graph_according_to_area()
         
     def _make_area(self, n_split):
-        n_x_lattice_in_area = math.floor((self.n_x_lattice + 1)/n_split)
+        n_x_lattice_in_area = math.ceil((self.n_x_lattice + 1)/n_split)
         
         n_x_area = math.ceil((self.n_x_lattice + 1) / n_x_lattice_in_area)
         n_y_area = math.ceil((self.n_y_lattice + 1) / n_x_lattice_in_area)
@@ -97,17 +87,24 @@ class Map(MapProcessor):
         state = int(self.coord_to_state([round(coord[0]), round(coord[1])]))
         return state
     
-    def _cp_n_split(self, n_subgraph_x_nodes):
+    def cp_n_split(self, n_subgraph_x_nodes):
         return math.ceil(self.n_x_lattice/n_subgraph_x_nodes)
     
-    def _update_graph_according_to_area(self, states):    
-        for counter, state in enumerate(states):
-            for state_ in states[counter:]:
+    def _update_graph_according_to_area(self):   
+        graph_mat = np.zeros((self.n_state, self.n_state))
+
+        for counter, state in enumerate(self.all_states):
+            for state_ in self.all_states[counter:]:
                 if self._is_same_area(state, state_):
-                    self.graph_mat[state,state_] = 1
-                    self.graph_mat[state_,state] = 1
+                    graph_mat[state,state_] = 1
+                    graph_mat[state_,state] = 1
+
+        return graph_mat
 
     def _is_same_area(self, state1, state2):
         area1 = self.state_to_area_state(state1)
         area2 = self.state_to_area_state(state2)
         return area1 == area2
+
+    def compute_e_dist_from_state(self, state1, state2):
+        return np.linalg.norm(self.state_to_coord(state1) - self.state_to_coord(state2)) * self.lattice_length

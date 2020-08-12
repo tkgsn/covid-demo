@@ -102,7 +102,7 @@ class Mechanism():
         return coord + chosen_noise_generator.generate()
     
     def _connected_states_number(self, state):
-        for counter, states in enumerate(self.map_processor.set_of_connected_states):
+        for counter, states in enumerate(self.set_of_connected_states):
             if state in states:
                 return counter
             
@@ -112,9 +112,8 @@ class Mechanism():
         for i, coord_ in enumerate(coords):
             distance = np.linalg.norm(coord - coord_)
             
-            if distance < min_distance:
+            if distance <= min_distance:
                 min_distance = distance
-                surrogated_loc = coord
                 state = states[i]
         
         return state
@@ -244,7 +243,7 @@ class PlanarIsotropicMechanism(Mechanism):
         return k
 
     def build_distribution(self, true_state):
-        states = self.map_processor.connected_states(true_state)
+        states = self.connected_states(true_state)
         coords = self.map_processor.states_to_coords(states)
         self.coords = coords
         
@@ -260,9 +259,13 @@ class PlanarIsotropicMechanism(Mechanism):
 
     def build_distributions(self):
         self.noise_generators = []
-        for states in self.map_processor.set_of_connected_states:
+        for states in self.set_of_connected_states:
             self.noise_generators.append(self.build_distribution(states[0]))
-        
+
+    def connected_states(self, state):
+        for states in self.set_of_connected_states:
+            if state in states:
+                return states
     
     def sample_point_from_boundary(self, vertices, n_sample = 1, total_length=None, segments=None):
         if total_length is None:

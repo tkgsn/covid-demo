@@ -35,7 +35,19 @@ class Simulation():
         #initialize default population
         self.population_init()
         self.counts = []
-        self.perturbed_counts = []
+        self.policy_graphs = [3,4,5]
+        self.perturbed_counts = [[] for _ in self.policy_graphs]
+        self.e_distances = [[] for _ in self.policy_graphs]
+
+        _xbounds = np.array([self.Config.xbounds[0] + 0.02, self.Config.xbounds[1] - 0.02])
+        _ybounds = np.array([self.Config.ybounds[0] + 0.02, self.Config.ybounds[1] - 0.02])
+
+        self.map_processor = Map(self.Config.n_grid, _xbounds[0], _xbounds[1], _ybounds[0], _ybounds[1])
+
+        self.mechanisms = []
+        for policy_graph in self.policy_graphs:
+            self.mechanisms.append(PIM(self.map_processor, self.Config.epsilon, policy_graph))
+            self.mechanisms[-1].build_distributions()
 
         self.pop_tracker = Population_trackers()
         self.range = 10
@@ -140,19 +152,20 @@ class Simulation():
             
         coords = self.population[:, 1:3]
         states = self.map_processor.find_nearest_states(coords)
-        count = surveil(states)
-        self.counts.append(count)
-        ac = np.average(self.counts[-self.range:])
-        
-        perturbed_states = [self.pim.perturb_to_subgraph(state) for state in states]
-        count2 = surveil(perturbed_states)
-        self.perturbed_counts.append(count2)
-        pac = np.average(self.perturbed_counts[-self.range:])
-        
-        perturbed_population = copy.deepcopy(self.population)
-        locations = [self.pim.map_processor.state_to_location(state) for state in states]
-        perturbed_locations = [self.pim.map_processor.state_to_location(state) for state in perturbed_states]
+        self.counts.append(surveil(states))
 
+        for i, mechanism in enumerate(self.mechanisms):
+            perturbed_states = [mechanism.perturb_to_subgraph(state) for state in states]
+            self.perturbed_counts[i].append(surveil(perturbed_states))
+            self.e_distances[i].append(np.average([self.map_processor.compute_e_dist_from_state(state, perturbed_state) for state, perturbed_state in zip(states, perturbed_states)]))
+
+        #ac = np.average(self.counts[-self.range:])
+        #pac = np.average(self.perturbed_counts[-self.range:])
+        
+        #locations = [self.map_processor.state_to_location(state) for state in states]
+        perturbed_locations = [self.map_processor.state_to_location(state) for state in perturbed_states]
+
+        perturbed_population = copy.deepcopy(self.population)
         for i, location in enumerate(perturbed_locations):
             perturbed_population[i][1] = location[0]
             perturbed_population[i][2] = location[1]
@@ -160,7 +173,7 @@ class Simulation():
         if self.Config.visualise:
             #draw_tstep(self.Config, perturbed_population, self.pop_tracker, self.frame, 
             #           self.fig, self.spec, self.ax1, self.ax2)
-            draw_tstep(self.Config, self.population, perturbed_population, self.counts, self.perturbed_counts, self.frame, 
+            draw_tstep(self.Config, self.population, perturbed_population, self.counts, self.perturbed_counts, self.e_distances, self.frame, 
                        self.fig, self.spec, self.ax1, self.ax2, self.ax3, self.ax4)
             #draw_tstep(self.Config, perturbed_population, self.pop_tracker, self.frame, self.ax)
         #visualise
@@ -169,8 +182,8 @@ class Simulation():
         #               self.fig, self.spec, self.ax1, self.ax2)
         
         #report stuff to console
-        sys.stdout.write('\r')
-        sys.stdout.write("%i: CC, %i: PP-CC, %f: ACC, %f: PP-ACC" %(count, count2, ac, pac))
+        #sys.stdout.write('\r')
+        #sys.stdout.write("%i: CC, %i: PP-CC, %f: ACC, %f: PP-ACC" %(count, perturbed_count_3, ac, pac))
         #sys.stdout.write('%i: healthy: %i, infected: %i, immune: %i, in treatment: %i, \
 #dead: %i, of total: %i, count: %i, perturbed_count: %i' %(self.frame, self.pop_tracker.susceptible[-1], self.pop_tracker.infectious[-1],
         #                self.pop_tracker.recovered[-1], len(self.population[self.population[:,10] == 1]),
@@ -204,13 +217,6 @@ class Simulation():
         '''run simulation'''
         
         i = 0
-        
-        _xbounds = np.array([self.Config.xbounds[0] + 0.02, self.Config.xbounds[1] - 0.02])
-        _ybounds = np.array([self.Config.ybounds[0] + 0.02, self.Config.ybounds[1] - 0.02])
-        
-        self.map_processor = Map(self.Config.n_grid, _xbounds[0], _xbounds[1], _ybounds[0], _ybounds[1], int(self.Config.policy_graph))
-        self.pim = PIM(self.map_processor, self.Config.epsilon)
-        self.pim.build_distributions()
                             
         while i < self.Config.simulation_steps:
             try:
