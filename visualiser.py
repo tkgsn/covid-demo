@@ -17,7 +17,7 @@ def set_style(Config):
         mpl.style.use('plot_styles/dark.mplstyle')
 
 
-def build_fig(Config, figsize=(7,5)):
+def build_fig(Config, figsize=(9,5)):
     set_style(Config)
     #fig = plt.figure(figsize=(5,7))
     fig = plt.figure(figsize=figsize)
@@ -38,8 +38,7 @@ def build_fig(Config, figsize=(7,5)):
     #ax2.set_ylim(Config.ybounds[0], Config.ybounds[1])
     
     ax3 = fig.add_subplot(spec[0,1])
-    ax3.set_title('number of contact')
-    
+    ax3.set_title('number of contact')   
     ax4 = fig.add_subplot(spec[1,1])
     ax4.set_title('place holder')
 
@@ -77,15 +76,19 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     view_range = 100
     ax3.set_xlim(frame-view_range, frame)
     ax3.set_ylim(-5, Config.pop_size + 5)
+    ax3.set_ylabel("count")
     ax4.set_xlim(frame-view_range, frame)
     ax4.set_ylim(0, 0.5)
+    ax4.set_xlabel("time step")
+    ax4.set_ylabel("Average Euclidean distance")
 
     if Config.self_isolate and Config.isolation_bounds != None:
         build_hospital(Config.isolation_bounds[0], Config.isolation_bounds[2],
                        Config.isolation_bounds[1], Config.isolation_bounds[3], ax1,
                        addcross = False)
         
-    ax1.scatter(population[:,1], population[:,2], color=palette[0], s = 2, label='healthy')
+    ax1.scatter(population[:,1], population[:,2], color=palette[0], s = 2, label='locations')
+    ax1.legend()
     #plot population segments
     #healthy = population[population[:,6] == 0][:,1:3]
     #ax1.scatter(healthy[:,0], healthy[:,1], color=palette[0], s = 2, label='healthy')
@@ -112,7 +115,8 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     #            fontsize=6)
     ax1.text(Config.x_plot[0], Config.y_plot[1] + ((Config.y_plot[1] - Config.y_plot[0]) / 100), 'timestep: %i' %(frame))
     
-    ax2.scatter(perturbed_population[:,1], perturbed_population[:,2], color=palette[0], s = 2, label='healthy')
+    ax2.scatter(perturbed_population[:,1], perturbed_population[:,2], color=palette[0], s = 2, label='perturbed locations')
+    ax2.legend()
     #healthy = perturbed_population[perturbed_population[:,6] == 0][:,1:3]
     #ax2.scatter(healthy[:,0], healthy[:,1], color=palette[0], s = 2, label='healthy')
     
@@ -156,7 +160,7 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     ax3.plot(range(frame+1), perturbed_counts[0], color=palette[1], label="privacy-preserved counts 3*3")
     ax3.plot(range(frame+1), perturbed_counts[1], color=palette[2], label="privacy-preserved counts 4*4")
     ax3.plot(range(frame+1), perturbed_counts[2], color=palette[3], label="privacy-preserved counts 5*5")
-    ax3.legend()
+    ax3.legend(fontsize=6)
 
     ax4.plot(range(frame+1), e_distances[0], color=palette[1], label="3*3")
     ax4.plot(range(frame+1), e_distances[1], color=palette[2], label="4*4")
