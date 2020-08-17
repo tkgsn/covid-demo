@@ -35,7 +35,7 @@ class Simulation():
         #initialize default population
         self.population_init()
         self.counts = []
-        self.policy_graphs = [3,4,5]
+        self.policy_graphs = [3,5,7]
         self.perturbed_counts = [[] for _ in self.policy_graphs]
         self.e_distances = [[] for _ in self.policy_graphs]
 
@@ -159,6 +159,8 @@ class Simulation():
             self.perturbed_counts[i].append(surveil(perturbed_states))
             self.e_distances[i].append(np.average([self.map_processor.compute_e_dist_from_state(state, perturbed_state) for state, perturbed_state in zip(states, perturbed_states)]))
 
+        self.Config.max_count = np.max(self.perturbed_counts)
+        self.Config.max_dist = np.max(self.e_distances)
         #ac = np.average(self.counts[-self.range:])
         #pac = np.average(self.perturbed_counts[-self.range:])
         

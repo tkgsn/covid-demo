@@ -30,13 +30,13 @@ class RootWidget(BoxLayout):
             self.text = "check any policy graph"
             return
         else:
-            policy_graph_value = np.array([3,4,5])[tuple([policy_graph_booleans])][0]
+            policy_graph_value = np.array([3,5,7])[tuple([policy_graph_booleans])][0]
             
-        sim = Simulation(pop_size=int(self.inputNPeople.text), policy_graph=policy_graph_value, epsilon=float(self.inputEpsilon.text), n_grid=int(self.inputNGrid.text))
+        sim = Simulation(pop_size=int(self.inputNPeople.text), epsilon=float(self.inputEpsilon.text), n_grid=int(self.inputNGrid.text))
         print("run")
         sim.run()
         
-       
+        
 class UiApp(App):
     def build(self):
         return RootWidget()

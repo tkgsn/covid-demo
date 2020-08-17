@@ -75,12 +75,14 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     ax2.set_ylim(Config.y_plot[0], Config.y_plot[1])
     view_range = 100
     ax3.set_xlim(frame-view_range, frame)
-    ax3.set_ylim(-5, Config.pop_size + 5)
+    #ax3.set_ylim(-5, Config.pop_size + 5)
+    ax3.set_ylim(-5, Config.max_count + 10)
     ax3.set_ylabel("count")
     ax4.set_xlim(frame-view_range, frame)
-    ax4.set_ylim(0, 0.5)
+    #ax4.set_ylim(0, 0.2)
+    ax4.set_ylim(0, Config.max_dist + 0.1)
     ax4.set_xlabel("time step")
-    ax4.set_ylabel("Average Euclidean distance")
+    #ax4.set_ylabel("Average Euclidean distance")
 
     if Config.self_isolate and Config.isolation_bounds != None:
         build_hospital(Config.isolation_bounds[0], Config.isolation_bounds[2],
@@ -88,7 +90,7 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
                        addcross = False)
         
     ax1.scatter(population[:,1], population[:,2], color=palette[0], s = 2, label='locations')
-    ax1.legend()
+    ax1.legend(loc='upper right')
     #plot population segments
     #healthy = population[population[:,6] == 0][:,1:3]
     #ax1.scatter(healthy[:,0], healthy[:,1], color=palette[0], s = 2, label='healthy')
@@ -116,7 +118,7 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     ax1.text(Config.x_plot[0], Config.y_plot[1] + ((Config.y_plot[1] - Config.y_plot[0]) / 100), 'timestep: %i' %(frame))
     
     ax2.scatter(perturbed_population[:,1], perturbed_population[:,2], color=palette[0], s = 2, label='perturbed locations')
-    ax2.legend()
+    ax2.legend(loc='upper right')
     #healthy = perturbed_population[perturbed_population[:,6] == 0][:,1:3]
     #ax2.scatter(healthy[:,0], healthy[:,1], color=palette[0], s = 2, label='healthy')
     
@@ -158,13 +160,13 @@ def draw_tstep(Config, population, perturbed_population, counts, perturbed_count
     #ax2.legend(loc = 'best', fontsize = 6)
     ax3.plot(range(frame+1), counts, color=palette[0], label="counts")
     ax3.plot(range(frame+1), perturbed_counts[0], color=palette[1], label="privacy-preserved counts 3*3")
-    ax3.plot(range(frame+1), perturbed_counts[1], color=palette[2], label="privacy-preserved counts 4*4")
-    ax3.plot(range(frame+1), perturbed_counts[2], color=palette[3], label="privacy-preserved counts 5*5")
+    ax3.plot(range(frame+1), perturbed_counts[1], color=palette[2], label="privacy-preserved counts 5*5")
+    ax3.plot(range(frame+1), perturbed_counts[2], color=palette[3], label="privacy-preserved counts 7*7")
     ax3.legend(fontsize=6)
 
     ax4.plot(range(frame+1), e_distances[0], color=palette[1], label="3*3")
-    ax4.plot(range(frame+1), e_distances[1], color=palette[2], label="4*4")
-    ax4.plot(range(frame+1), e_distances[2], color=palette[3], label="5*5")
+    ax4.plot(range(frame+1), e_distances[1], color=palette[2], label="5*5")
+    ax4.plot(range(frame+1), e_distances[2], color=palette[3], label="7*7")
     ax4.legend()
     
     plt.draw()

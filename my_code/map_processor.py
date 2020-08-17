@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import networkx as nx
+import matplotlib.pyplot as plt
 
 class MapProcessor():
     def __init__(self, n_x_lattice):
@@ -33,15 +34,25 @@ class Map(MapProcessor):
         return [self._find_nearest_state(coord) for coord in coords]
             
     def make_set_of_connected_states(self, graph_mat):
-        G = nx.Graph()
-        G.add_nodes_from(self.all_states)
+        self.G = nx.Graph()
+        self.G.add_nodes_from(self.all_states)
+        
+        pos = {}
 
+        for state in self.all_states:
+            pos[state] = 2 * self.state_to_coord(state)/self.n_x_lattice
+        
         for i, state in enumerate(self.all_states):
             for state_ in self.all_states[i:]:
                 if graph_mat[state, state_] == 1:
-                    G.add_edge(state, state_)
-
-        return [list(nodes) for nodes in nx.connected_components(G)]
+                    self.G.add_edge(state, state_)
+        fig = plt.figure(facecolor="w")
+        ax = fig.add_subplot(111)
+        nx.draw_networkx(self.G, pos=pos, node_size=0, with_labels=False)
+        ax.tick_params(left=True, bottom=True, labelleft=True, labelbottom=True)
+        plt.show()
+                    
+        return [list(nodes) for nodes in nx.connected_components(self.G)]
     
     def _make_map(self, min_x, max_x, min_y, max_y):
         
