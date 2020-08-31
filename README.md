@@ -1,6 +1,14 @@
-# VLDB 2020 DEMO
+# PANDA: Policy-aware Location Privacy for Epidemic Surveillance 
 
-this repository is based on https://github.com/paulvangentcom/python_corona_simulation/.
+This work is published in [VLDB 2020](https://vldb2020.org/) DEMO track.  Download our paper [here](http://www.vldb.org/pvldb/vol13/p3001-cao.pdf).
+
+
+
+Our system is based Policy Graph-based Location Privacy (PGLP). [Github](https://github.com/tkgsn/PGLP)
+
+The code is adapted from Python COVID-19 ('Corona Virus') Simulation. [Github](https://github.com/paulvangentcom/python_corona_simulation/)
+
+
 
 # How to run
 This is implemented with python 3.7.3
