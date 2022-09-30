@@ -4,7 +4,7 @@ cycler==0.10.0
 decorator==4.4.2
 docutils==0.16
 idna==2.10
-joblib==0.16.0
+joblib==1.2.0
 Kivy==1.11.1
 Kivy-Garden==0.1.4
 kiwisolver==1.2.0
